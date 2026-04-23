@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/SpendSmart.Auth.API/SpendSmart.Auth.API.csproj" />
+    <Project Path="src/SpendSmart.Expense.API/SpendSmart.Expense.API.csproj" />
   </Folder>
 </Solution>
