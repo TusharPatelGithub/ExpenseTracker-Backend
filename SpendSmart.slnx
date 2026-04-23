@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SpendSmart.Auth.API/SpendSmart.Auth.API.csproj" />
+  </Folder>
+</Solution>
