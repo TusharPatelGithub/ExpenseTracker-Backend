@@ -9,7 +9,7 @@ using System.Security.Claims;
 namespace SpendSmart.Auth.API.Controllers
 {
     [ApiController]
-    [Route("api/auth")]
+    [Route("api/users")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
