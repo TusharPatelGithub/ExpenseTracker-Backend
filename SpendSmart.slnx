@@ -2,5 +2,10 @@
   <Folder Name="/src/">
     <Project Path="src/SpendSmart.Auth.API/SpendSmart.Auth.API.csproj" />
     <Project Path="src/SpendSmart.Expense.API/SpendSmart.Expense.API.csproj" />
+    <Project Path="src/SpendSmart.Budget.API/SpendSmart.Budget.API.csproj" />
+    <Project Path="src/SpendSmart.Category.API/SpendSmart.Category.API.csproj" />
+    <Project Path="src/SpendSmart.Income.API/SpendSmart.Income.API.csproj" />
+    <Project Path="src/SpendSmart.Notification.API/SpendSmart.Notification.API.csproj" />
+    <Project Path="src/SpendSmart.Report.API/SpendSmart.Report.API.csproj" />
   </Folder>
 </Solution>
