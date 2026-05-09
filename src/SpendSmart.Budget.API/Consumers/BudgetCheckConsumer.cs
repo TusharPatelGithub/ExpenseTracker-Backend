@@ -1,5 +1,5 @@
 using MassTransit;
-using SpendSmart.Budget.API.IntegrationEvents;
+using SpendSmart.Expense.API.IntegrationEvents;
 using SpendSmart.Budget.API.Services;
 
 namespace SpendSmart.Budget.API.Consumers

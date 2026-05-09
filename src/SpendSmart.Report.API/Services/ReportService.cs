@@ -139,43 +139,64 @@ namespace SpendSmart.Report.API.Services
             QuestPDF.Settings.License = LicenseType.Community;
 
             var month = parameters.ContainsKey("month") ? int.Parse(parameters["month"]) : DateTime.UtcNow.Month;
-            var year = parameters.ContainsKey("year") ? int.Parse(parameters["year"]) : DateTime.UtcNow.Year;
-            var summary = await GetMonthlySummaryAsync(userId, month, year);
+            var year  = parameters.ContainsKey("year")  ? int.Parse(parameters["year"])  : DateTime.UtcNow.Year;
 
+            var summary  = await GetMonthlySummaryAsync(userId, month, year);
             var fileName = $"report_{userId}_{reportType}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
             var filePath = Path.Combine(_env.ContentRootPath, "Reports", fileName);
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
 
-            Document.Create(container =>
+            try
             {
-                container.Page(page =>
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+
+                Document.Create(container =>
                 {
-                    page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
-                    page.Content().Column(col =>
+                    container.Page(page =>
                     {
-                        col.Item().Text($"SpendSmart - {reportType} Report").FontSize(20).Bold();
-                        col.Item().Text($"User: {userId} | Period: {month}/{year}").FontSize(12);
-                        col.Item().PaddingTop(10).Text($"Total Income:  {summary.TotalIncome:C}").FontSize(12);
-                        col.Item().Text($"Total Expense: {summary.TotalExpense:C}").FontSize(12);
-                        col.Item().Text($"Net Savings:   {summary.NetSavings:C}").FontSize(12);
-                        col.Item().Text($"Savings Rate:  {summary.SavingsRate}%").FontSize(12);
+                        page.Size(PageSizes.A4);
+                        page.Margin(2, Unit.Centimetre);
+                        page.Content().Column(col =>
+                        {
+                            col.Item().Text($"SpendSmart - {reportType} Report").FontSize(20).Bold();
+                            col.Item().Text($"User: {userId} | Period: {month}/{year}").FontSize(12);
+                            col.Item().PaddingTop(10).Text($"Total Income:  {summary.TotalIncome:C}").FontSize(12);
+                            col.Item().Text($"Total Expense: {summary.TotalExpense:C}").FontSize(12);
+                            col.Item().Text($"Net Savings:   {summary.NetSavings:C}").FontSize(12);
+                            col.Item().Text($"Savings Rate:  {summary.SavingsRate}%").FontSize(12);
+                        });
                     });
-                });
-            }).GeneratePdf(filePath);
+                }).GeneratePdf(filePath);
 
-            var report = new ReportEntity
+                // ── Success: persist report record with GENERATED status ──────────
+                var report = new ReportEntity
+                {
+                    UserId     = userId,
+                    ReportType = reportType,
+                    Title      = $"{reportType} Report - {month}/{year}",
+                    FilePath   = filePath,
+                    Parameters = JsonSerializer.Serialize(parameters),
+                    Status     = "GENERATED"
+                };
+
+                await _reportRepository.SaveReportAsync(report);
+                return filePath;
+            }
+            catch (Exception)
             {
-                UserId = userId,
-                ReportType = reportType,
-                Title = $"{reportType} Report - {month}/{year}",
-                FilePath = filePath,
-                Parameters = JsonSerializer.Serialize(parameters),
-                Status = "GENERATED"
-            };
+                // ── Failure: persist a FAILED record so the user can see it ──────
+                var failedReport = new ReportEntity
+                {
+                    UserId     = userId,
+                    ReportType = reportType,
+                    Title      = $"{reportType} Report - {month}/{year}",
+                    FilePath   = null,           // no file was produced
+                    Parameters = JsonSerializer.Serialize(parameters),
+                    Status     = "FAILED"
+                };
 
-            await _reportRepository.SaveReportAsync(report);
-            return filePath;
+                await _reportRepository.SaveReportAsync(failedReport);
+                throw;   // rethrow so the controller returns 400 with the error message
+            }
         }
 
         public async Task<List<ReportEntity>> GetReportsByUserAsync(int userId)

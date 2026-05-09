@@ -47,6 +47,11 @@ namespace SpendSmart.Category.API.Repositories
             await Task.CompletedTask;
         }
 
+        public async Task DeactivateByCategoryIdAsync(int categoryId)
+            => await _context.Categories
+                .Where(c => c.CategoryId == categoryId)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsActive, false));
+
         public async Task DeleteByCategoryIdAsync(int categoryId)
             => await _context.Categories
                 .Where(c => c.CategoryId == categoryId)

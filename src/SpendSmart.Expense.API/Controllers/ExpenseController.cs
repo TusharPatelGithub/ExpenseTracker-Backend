@@ -21,11 +21,11 @@ namespace SpendSmart.Expense.API.Controllers
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpPost]
-        public async Task<IActionResult> AddExpense([FromForm] AddExpenseDto dto, IFormFile? receipt)
+        public async Task<IActionResult> AddExpense([FromBody] AddExpenseDto dto)
         {
             try
             {
-                var response = await _expenseService.AddExpenseAsync(GetUserId(), dto, receipt);
+                var response = await _expenseService.AddExpenseAsync(GetUserId(), dto, null);
                 return CreatedAtAction(nameof(GetById), new { id = response.ExpenseId }, response);
             }
             catch (Exception ex)

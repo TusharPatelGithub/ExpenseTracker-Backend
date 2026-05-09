@@ -38,7 +38,7 @@ namespace SpendSmart.Expense.API.Services
                 Amount = dto.Amount,
                 Currency = dto.Currency,
                 Description = dto.Description,
-                Date = dto.Date,
+                Date = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc),
                 PaymentMode = dto.PaymentMode,
                 Tags = dto.Tags,
                 IsRecurring = dto.IsRecurring,
@@ -102,10 +102,11 @@ namespace SpendSmart.Expense.API.Services
             expense.Amount = dto.Amount;
             expense.Currency = dto.Currency;
             expense.Description = dto.Description;
-            expense.Date = dto.Date;
+            expense.Date = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc);
             expense.PaymentMode = dto.PaymentMode;
             expense.Tags = dto.Tags;
             expense.IsRecurring = dto.IsRecurring;
+            expense.UpdatedAt = DateTime.UtcNow;
 
             await _expenseRepository.UpdateAsync(expense);
             await _expenseRepository.SaveChangesAsync();

@@ -87,11 +87,22 @@ namespace SpendSmart.Category.API.Controllers
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         }
 
+        // Self-service seed: user calls this with their own JWT
         [HttpPost("seed")]
         public async Task<IActionResult> SeedDefaults()
         {
             await _categoryService.SeedDefaultCategoriesAsync(GetUserId());
             return Ok(new { message = "Default categories seeded successfully." });
+        }
+
+        // Internal seed endpoint: called by Auth service after user registration
+        // AllowAnonymous so it can be called without a JWT (internal traffic only)
+        [AllowAnonymous]
+        [HttpPost("seed/{userId:int}")]
+        public async Task<IActionResult> SeedDefaultsForUser(int userId)
+        {
+            await _categoryService.SeedDefaultCategoriesAsync(userId);
+            return Ok(new { message = $"Default categories seeded for UserId={userId}." });
         }
     }
 }

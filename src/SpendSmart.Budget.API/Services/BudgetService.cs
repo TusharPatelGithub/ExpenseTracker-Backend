@@ -126,15 +126,17 @@ namespace SpendSmart.Budget.API.Services
 
             await _budgetRepository.UpdateSpentAmountAsync(budget.BudgetId, amount);
 
-            var updated = await _budgetRepository.FindByBudgetIdAsync(budget.BudgetId);
-            if (updated == null) return;
+            // Compute the NEW spent amount locally — avoids EF Core returning the old
+            // cached entity after ExecuteUpdateAsync (which bypasses the EF change tracker).
+            var newSpentAmount = budget.SpentAmount + amount;
+            var utilization = budget.LimitAmount == 0
+                ? 0
+                : (newSpentAmount / budget.LimitAmount) * 100;
 
-            var utilization = updated.LimitAmount == 0 ? 0 : (updated.SpentAmount / updated.LimitAmount) * 100;
-
-            if (updated.SpentAmount >= updated.LimitAmount)
-                await _notificationService.SendBudgetAlertAsync(userId, updated.BudgetId, updated.Name, utilization, "LIMIT_REACHED");
+            if (newSpentAmount >= budget.LimitAmount)
+                await _notificationService.SendBudgetAlertAsync(userId, budget.BudgetId, budget.Name, utilization, "LIMIT_REACHED");
             else if (utilization >= 80)
-                await _notificationService.SendBudgetAlertAsync(userId, updated.BudgetId, updated.Name, utilization, "WARNING");
+                await _notificationService.SendBudgetAlertAsync(userId, budget.BudgetId, budget.Name, utilization, "WARNING");
         }
 
         private static BudgetResponseDto MapToResponseDto(BudgetEntity b) => new()

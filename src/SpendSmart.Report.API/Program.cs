@@ -84,4 +84,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+
+
+// Auto-create database tables if they don't exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ReportDbContext>();
+    db.Database.EnsureCreated();
+}
+
 app.Run();

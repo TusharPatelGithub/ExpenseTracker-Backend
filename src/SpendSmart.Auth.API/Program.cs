@@ -19,6 +19,14 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICategoryService, CategorySeedingService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
+// Named HTTP client for seeding categories in the Category microservice on user registration
+builder.Services.AddHttpClient("CategoryService", client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["ServiceUrls:CategoryService"]!);
+});
 
 // Singleton: token blacklist must outlive individual requests
 builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();

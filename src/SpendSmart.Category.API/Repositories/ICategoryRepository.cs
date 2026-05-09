@@ -13,6 +13,7 @@ namespace SpendSmart.Category.API.Repositories
         Task<List<CategoryEntity>> FindAllForUserAsync(int userId);
         Task AddAsync(CategoryEntity category);
         Task UpdateAsync(CategoryEntity category);
+        Task DeactivateByCategoryIdAsync(int categoryId);
         Task DeleteByCategoryIdAsync(int categoryId);
         Task SaveChangesAsync();
     }

@@ -69,6 +69,40 @@ namespace SpendSmart.Report.API.Controllers
         public async Task<IActionResult> GetMyReports()
             => Ok(await _reportService.GetReportsByUserAsync(GetUserId()));
 
+        /// <summary>
+        /// GET /api/reports/download/{id}
+        /// Streams the generated PDF file from local disk back to the client
+        /// as a file download (Content-Disposition: attachment).
+        /// </summary>
+        [HttpGet("download/{id:int}")]
+        public async Task<IActionResult> DownloadPdf(int id)
+        {
+            try
+            {
+                var reports = await _reportService.GetReportsByUserAsync(GetUserId());
+                var report  = reports.FirstOrDefault(r => r.ReportId == id);
+
+                if (report is null)
+                    return NotFound(new { message = "Report not found." });
+
+                if (string.IsNullOrEmpty(report.FilePath) || report.Status == "FAILED")
+                    return BadRequest(new { message = "This report has no file available for download." });
+
+                if (!System.IO.File.Exists(report.FilePath))
+                    return NotFound(new { message = "Report file no longer exists on disk." });
+
+                // Stream the PDF bytes directly — no buffering into memory
+                var stream   = new FileStream(report.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+                var fileName = Path.GetFileName(report.FilePath);
+
+                return File(stream, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteReport(int id)
         {

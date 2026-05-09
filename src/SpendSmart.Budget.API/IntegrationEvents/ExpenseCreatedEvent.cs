@@ -1,4 +1,4 @@
-namespace SpendSmart.Budget.API.IntegrationEvents
+namespace SpendSmart.Expense.API.IntegrationEvents
 {
     public class ExpenseCreatedEvent
     {

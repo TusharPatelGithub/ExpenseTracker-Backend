@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SpendSmart.Notification.API.BackgroundServices;
 using SpendSmart.Notification.API.Data;
 using SpendSmart.Notification.API.Repositories;
 using SpendSmart.Notification.API.Services;
@@ -13,6 +14,9 @@ builder.Services.AddDbContext<NotificationDbContext>(options =>
 
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// IHostedService: sends MONTHLY_SUMMARY notifications on the 1st of each month
+builder.Services.AddHostedService<MonthlySummaryNotificationService>();
 
 var jwt = builder.Configuration.GetSection("JwtSettings");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -72,5 +76,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+
+
+// Auto-create database tables if they don't exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();

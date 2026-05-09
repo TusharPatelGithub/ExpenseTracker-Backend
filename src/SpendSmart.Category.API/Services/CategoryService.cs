@@ -83,15 +83,15 @@ namespace SpendSmart.Category.API.Services
 
         public async Task DeactivateCategoryAsync(int categoryId, int userId)
         {
+            // Load only to verify ownership — no full entity tracking needed for the update
             var category = await _categoryRepository.FindByCategoryIdAsync(categoryId)
                 ?? throw new KeyNotFoundException("Category not found.");
 
             if (category.UserId != userId)
                 throw new UnauthorizedAccessException("Unauthorized to deactivate this category.");
 
-            await _categoryRepository.UpdateAsync(category);
-            category.IsActive = false;
-            await _categoryRepository.SaveChangesAsync();
+            // ExecuteUpdateAsync issues a single SQL UPDATE without loading/tracking the entity
+            await _categoryRepository.DeactivateByCategoryIdAsync(categoryId);
         }
 
         public async Task DeleteCategoryAsync(int categoryId, int userId)

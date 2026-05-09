@@ -19,10 +19,25 @@ builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<BudgetResetService>();
 
+// HTTP client for cross-service budget alert calls to the Notification microservice
+builder.Services.AddHttpClient("NotificationService", client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["ServiceUrls:NotificationService"]!);
+});
+
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<BudgetCheckConsumer>();
-    x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+        cfg.ConfigureEndpoints(context);
+    });
 });
 
 var jwt = builder.Configuration.GetSection("JwtSettings");
@@ -83,5 +98,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+
+
+// Auto-create database tables if they don't exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<BudgetDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();

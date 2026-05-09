@@ -21,7 +21,15 @@ builder.Services.AddScoped<IMediaService, LocalMediaService>();
 // ── MassTransit (InMemory for dev — swap to RabbitMQ when ready) ─────────────
 builder.Services.AddMassTransit(x =>
 {
-    x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+        cfg.ConfigureEndpoints(context);
+    });
 });
 
 // ── JWT Authentication ───────────────────────────────────────────────────────
@@ -86,5 +94,14 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+
+
+// Auto-create database tables if they don't exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ExpenseDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();

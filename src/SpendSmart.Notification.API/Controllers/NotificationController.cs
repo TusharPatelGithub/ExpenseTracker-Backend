@@ -63,11 +63,29 @@ namespace SpendSmart.Notification.API.Controllers
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("send-bulk")]
         public async Task<IActionResult> SendBulk([FromBody] SendBulkDto dto)
         {
             await _notificationService.SendBulkAsync(dto.UserIds, dto.Title, dto.Message, dto.Type);
             return Ok(new { message = $"Notification sent to {dto.UserIds.Count} users." });
+        }
+
+        // Internal endpoint: called by background services in other microservices (no JWT needed)
+        [AllowAnonymous]
+        [HttpPost("send-internal")]
+        public async Task<IActionResult> SendInternal([FromBody] InternalNotificationDto dto)
+        {
+            await _notificationService.SendAsync(new Entities.NotificationEntity
+            {
+                UserId    = dto.UserId,
+                Type      = dto.Type,
+                Title     = dto.Title,
+                Message   = dto.Message,
+                RelatedId = dto.RelatedId,
+                IsRead    = false
+            });
+            return Ok(new { message = "Notification sent." });
         }
     }
 }

@@ -2,6 +2,7 @@ using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SpendSmart.Income.API.BackgroundServices;
 using SpendSmart.Income.API.Data;
 using SpendSmart.Income.API.Repositories;
 using SpendSmart.Income.API.Services;
@@ -19,10 +20,29 @@ builder.Services.AddHttpClient("ExpenseService", client =>
 
 builder.Services.AddScoped<IIncomeRepository, IncomeRepository>();
 builder.Services.AddScoped<IIncomeService, IncomeService>();
+builder.Services.AddHttpContextAccessor(); // needed for JWT forwarding in GetNetBalanceAsync
+
+// Named HTTP client for cross-service calls to the Notification microservice
+builder.Services.AddHttpClient("NotificationService", client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["ServiceUrls:NotificationService"]!);
+});
+
+// IHostedService: sends RECURRING_REMINDER notifications for upcoming recurring incomes
+builder.Services.AddHostedService<RecurringReminderService>();
 
 builder.Services.AddMassTransit(x =>
 {
-    x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+        cfg.ConfigureEndpoints(context);
+    });
 });
 
 var jwt = builder.Configuration.GetSection("JwtSettings");
@@ -83,5 +103,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+
+
+// Auto-create database tables if they don't exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IncomeDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();

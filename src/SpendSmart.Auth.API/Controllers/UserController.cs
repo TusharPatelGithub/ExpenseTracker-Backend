@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SpendSmart.Auth.API.DTOs;
 using SpendSmart.Auth.API.Services;
 using System.Security.Claims;
@@ -14,11 +15,16 @@ namespace SpendSmart.Auth.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly ITokenBlacklistService _tokenBlacklist;
+        private readonly IAuditLogService _auditLog;
 
-        public UserController(IUserService userService, ITokenBlacklistService tokenBlacklist)
+        public UserController(
+            IUserService userService,
+            ITokenBlacklistService tokenBlacklist,
+            IAuditLogService auditLog)
         {
-            _userService      = userService;
-            _tokenBlacklist   = tokenBlacklist;
+            _userService    = userService;
+            _tokenBlacklist = tokenBlacklist;
+            _auditLog       = auditLog;
         }
 
         // ─── Registration & Login ─────────────────────────────────────────────────
@@ -239,7 +245,19 @@ namespace SpendSmart.Auth.API.Controllers
         {
             try
             {
+                var actorId    = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var actorEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin";
+
+                var target = await _userService.GetUserByIdAsync(userId);
+                var before = new { target?.IsActive };
+
                 await _userService.SuspendAccountAsync(userId);
+
+                await _auditLog.LogAsync(actorId, actorEmail, "SUSPEND_USER",
+                    targetUserId: userId,
+                    before: before,
+                    after: new { IsActive = false });
+
                 return Ok(new { message = $"User {userId} has been suspended." });
             }
             catch (Exception ex)
@@ -255,13 +273,37 @@ namespace SpendSmart.Auth.API.Controllers
         {
             try
             {
+                var actorId    = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var actorEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin";
+
+                var target = await _userService.GetUserByIdAsync(userId);
+                var before = new { target?.UserId, target?.Email, target?.FullName, target?.Role };
+
                 await _userService.DeleteAccountAsync(userId);
+
+                await _auditLog.LogAsync(actorId, actorEmail, "DELETE_USER",
+                    targetUserId: userId,
+                    before: before,
+                    after: new { Deleted = true });
+
                 return Ok(new { message = $"User {userId} has been permanently deleted." });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        /// <summary>GET api/users/admin/audit-logs — admin: view all audit logs.</summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/audit-logs")]
+        public async Task<IActionResult> GetAuditLogs(
+            [FromServices] SpendSmart.Auth.API.Data.AuthDbContext db)
+        {
+            var logs = await db.AuditLogs
+                .OrderByDescending(a => a.Timestamp)
+                .ToListAsync();
+            return Ok(logs);
         }
     }
 }

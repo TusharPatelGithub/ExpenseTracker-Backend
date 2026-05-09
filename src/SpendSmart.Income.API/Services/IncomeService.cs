@@ -11,15 +11,18 @@ namespace SpendSmart.Income.API.Services
         private readonly IIncomeRepository _incomeRepository;
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public IncomeService(
             IIncomeRepository incomeRepository,
             IPublishEndpoint publishEndpoint,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IHttpContextAccessor httpContextAccessor)
         {
-            _incomeRepository = incomeRepository;
-            _publishEndpoint = publishEndpoint;
-            _httpClientFactory = httpClientFactory;
+            _incomeRepository     = incomeRepository;
+            _publishEndpoint      = publishEndpoint;
+            _httpClientFactory    = httpClientFactory;
+            _httpContextAccessor  = httpContextAccessor;
         }
 
         public async Task<IncomeResponseDto> AddIncomeAsync(int userId, AddIncomeDto dto)
@@ -31,7 +34,7 @@ namespace SpendSmart.Income.API.Services
                 Amount = dto.Amount,
                 Currency = dto.Currency,
                 Description = dto.Description,
-                Date = dto.Date,
+                Date = dto.Date.ToUniversalTime(),
                 IsRecurring = dto.IsRecurring,
                 RecurrenceType = dto.RecurrenceType
             };
@@ -86,7 +89,7 @@ namespace SpendSmart.Income.API.Services
             income.Amount = dto.Amount;
             income.Currency = dto.Currency;
             income.Description = dto.Description;
-            income.Date = dto.Date;
+            income.Date = dto.Date.ToUniversalTime();
             income.IsRecurring = dto.IsRecurring;
             income.RecurrenceType = dto.RecurrenceType;
 
@@ -121,9 +124,19 @@ namespace SpendSmart.Income.API.Services
 
         public async Task<decimal> GetNetBalanceAsync(int userId)
         {
-            var client = _httpClientFactory.CreateClient("ExpenseService");
             var totalIncome = await _incomeRepository.SumByUserIdAsync(userId);
-            var response = await client.GetAsync($"/api/expenses/total/{userId}");
+
+            var client = _httpClientFactory.CreateClient("ExpenseService");
+
+            // Forward the caller's JWT so the Expense API can authorise the request
+            var jwt = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrEmpty(jwt))
+                client.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue(
+                        "Bearer", jwt.Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase));
+
+            // Correct endpoint: /api/expenses/total (userId resolved from JWT claim)
+            var response = await client.GetAsync("/api/expenses/total");
             decimal totalExpense = 0;
             if (response.IsSuccessStatusCode)
             {
