@@ -11,6 +11,7 @@ namespace SpendSmart.Income.API.Repositories
         Task<decimal> SumByUserIdAsync(int userId);
         Task<decimal> SumBySourceAsync(int userId, string source);
         Task<List<IncomeEntity>> FindRecurringAsync(int userId);
+        Task<decimal> SumAllPlatformAsync();
         Task AddAsync(IncomeEntity income);
         Task UpdateAsync(IncomeEntity income);
         Task DeleteByIncomeIdAsync(int incomeId);

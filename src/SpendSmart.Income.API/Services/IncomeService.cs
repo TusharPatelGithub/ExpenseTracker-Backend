@@ -1,4 +1,5 @@
 using MassTransit;
+using Microsoft.Extensions.Logging;
 using SpendSmart.Income.API.DTOs;
 using SpendSmart.Income.API.Entities;
 using SpendSmart.Income.API.IntegrationEvents;
@@ -12,17 +13,20 @@ namespace SpendSmart.Income.API.Services
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<IncomeService> _logger;
 
         public IncomeService(
             IIncomeRepository incomeRepository,
             IPublishEndpoint publishEndpoint,
             IHttpClientFactory httpClientFactory,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<IncomeService> logger)
         {
             _incomeRepository     = incomeRepository;
             _publishEndpoint      = publishEndpoint;
             _httpClientFactory    = httpClientFactory;
             _httpContextAccessor  = httpContextAccessor;
+            _logger               = logger;
         }
 
         public async Task<IncomeResponseDto> AddIncomeAsync(int userId, AddIncomeDto dto)
@@ -108,6 +112,9 @@ namespace SpendSmart.Income.API.Services
                 throw new UnauthorizedAccessException("Unauthorized to delete this income.");
 
             await _incomeRepository.DeleteByIncomeIdAsync(incomeId);
+
+            _logger.LogInformation("AUDIT LOG: User {UserId} deleted Income {IncomeId} from {Source} of Amount {Amount} {Currency} on {Date}", 
+                userId, incomeId, income.Source, income.Amount, income.Currency, DateTime.UtcNow);
         }
 
         public async Task<decimal> GetTotalIncomeAsync(int userId)
@@ -145,6 +152,9 @@ namespace SpendSmart.Income.API.Services
             }
             return totalIncome - totalExpense;
         }
+
+        public async Task<decimal> GetPlatformTotalAsync()
+            => await _incomeRepository.SumAllPlatformAsync();
 
         private static IncomeResponseDto MapToResponseDto(IncomeEntity e) => new()
         {

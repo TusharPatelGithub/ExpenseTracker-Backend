@@ -86,5 +86,15 @@ namespace SpendSmart.Income.API.Controllers
             catch (UnauthorizedAccessException) { return Forbid(); }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         }
+
+        // ─── Admin-Only ────────────────────────────────────────────────────────────
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/total")]
+        public async Task<IActionResult> GetPlatformTotal()
+        {
+            var total = await _incomeService.GetPlatformTotalAsync();
+            return Ok(new { Total = total });
+        }
     }
 }

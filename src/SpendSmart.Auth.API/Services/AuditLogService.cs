@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SpendSmart.Auth.API.Data;
 using SpendSmart.Auth.API.Entities;
 using System.Text.Json;
@@ -8,6 +9,8 @@ namespace SpendSmart.Auth.API.Services
     {
         Task LogAsync(int actorUserId, string actorEmail, string action,
                       int? targetUserId = null, object? before = null, object? after = null);
+
+        Task<List<AuditLog>> GetAuditLogsPagedAsync(int page = 1, int pageSize = 50);
     }
 
     /// <summary>
@@ -55,6 +58,15 @@ namespace SpendSmart.Auth.API.Services
                 _logger.LogError(ex,
                     "AuditLogService: failed to persist audit log for action={Action}.", action);
             }
+        }
+
+        public async Task<List<AuditLog>> GetAuditLogsPagedAsync(int page = 1, int pageSize = 50)
+        {
+            return await _db.AuditLogs
+                .OrderByDescending(l => l.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
         }
     }
 }

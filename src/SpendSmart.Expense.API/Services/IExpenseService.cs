@@ -17,5 +17,7 @@ namespace SpendSmart.Expense.API.Services
         Task<decimal> GetTotalByCategoryAsync(int userId, int categoryId);
         Task<List<ExpenseResponseDto>> GetRecurringExpensesAsync(int userId);
         Task<List<ExpenseResponseDto>> SearchExpensesAsync(int userId, string keyword);
+        Task<decimal> GetPlatformTotalAsync();
+        Task<List<TopCategoryAdminDto>> GetTopPlatformCategoriesAsync(int topN = 5);
     }
 }

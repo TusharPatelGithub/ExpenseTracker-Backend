@@ -134,7 +134,7 @@ namespace SpendSmart.Report.API.Services
             return summary.SavingsRate;
         }
 
-        public async Task<string> GeneratePdfReportAsync(int userId, string reportType, Dictionary<string, string> parameters)
+        public async Task<byte[]> GeneratePdfReportAsync(int userId, string reportType, Dictionary<string, string> parameters, bool saveRecord = true)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
@@ -142,60 +142,105 @@ namespace SpendSmart.Report.API.Services
             var year  = parameters.ContainsKey("year")  ? int.Parse(parameters["year"])  : DateTime.UtcNow.Year;
 
             var summary  = await GetMonthlySummaryAsync(userId, month, year);
-            var fileName = $"report_{userId}_{reportType}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
-            var filePath = Path.Combine(_env.ContentRootPath, "Reports", fileName);
+            
+            var start = new DateTime(year, month, 1);
+            var end = start.AddMonths(1).AddDays(-1);
+            var categoryBreakdown = await GetCategoryBreakdownAsync(userId, start, end);
 
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-
-                Document.Create(container =>
+                var document = Document.Create(container =>
                 {
                     container.Page(page =>
                     {
                         page.Size(PageSizes.A4);
                         page.Margin(2, Unit.Centimetre);
-                        page.Content().Column(col =>
+                        
+                        page.Header().Column(col =>
                         {
                             col.Item().Text($"SpendSmart - {reportType} Report").FontSize(20).Bold();
-                            col.Item().Text($"User: {userId} | Period: {month}/{year}").FontSize(12);
-                            col.Item().PaddingTop(10).Text($"Total Income:  {summary.TotalIncome:C}").FontSize(12);
+                            col.Item().Text($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm}").FontSize(10).FontColor(Colors.Grey.Medium);
+                            col.Item().PaddingBottom(10).LineHorizontal(1f);
+                        });
+
+                        page.Content().Column(col =>
+                        {
+                            col.Item().Text($"User: {userId} | Period: {month}/{year}").FontSize(12).Bold();
+                            col.Item().PaddingTop(10).Text("Summary").FontSize(16).Bold();
+                            col.Item().Text($"Total Income:  {summary.TotalIncome:C}").FontSize(12);
                             col.Item().Text($"Total Expense: {summary.TotalExpense:C}").FontSize(12);
                             col.Item().Text($"Net Savings:   {summary.NetSavings:C}").FontSize(12);
                             col.Item().Text($"Savings Rate:  {summary.SavingsRate}%").FontSize(12);
+
+                            col.Item().PaddingTop(20).Text("Category Breakdown").FontSize(16).Bold();
+                            col.Item().PaddingTop(10).Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn();
+                                    columns.RelativeColumn();
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(5).Text("Category").Bold();
+                                    header.Cell().BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(5).AlignRight().Text("Total").Bold();
+                                });
+
+                                foreach (var item in categoryBreakdown)
+                                {
+                                    table.Cell().PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Text(item["categoryId"].ToString());
+                                    table.Cell().PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).AlignRight().Text($"{item["total"]:C}");
+                                }
+                            });
+                        });
+                        
+                        page.Footer().AlignCenter().Text(x =>
+                        {
+                            x.Span("Page ");
+                            x.CurrentPageNumber();
+                            x.Span(" of ");
+                            x.TotalPages();
                         });
                     });
-                }).GeneratePdf(filePath);
+                });
 
-                // ── Success: persist report record with GENERATED status ──────────
-                var report = new ReportEntity
+                var pdfBytes = document.GeneratePdf();
+
+                if (saveRecord)
                 {
-                    UserId     = userId,
-                    ReportType = reportType,
-                    Title      = $"{reportType} Report - {month}/{year}",
-                    FilePath   = filePath,
-                    Parameters = JsonSerializer.Serialize(parameters),
-                    Status     = "GENERATED"
-                };
+                    var report = new ReportEntity
+                    {
+                        UserId     = userId,
+                        ReportType = reportType,
+                        Title      = $"{reportType} Report - {month}/{year}",
+                        FilePath   = string.Empty, // no file saved to disk
+                        Parameters = JsonSerializer.Serialize(parameters),
+                        Status     = "GENERATED",
+                        GeneratedAt = DateTime.UtcNow
+                    };
+                    await _reportRepository.SaveReportAsync(report);
+                }
 
-                await _reportRepository.SaveReportAsync(report);
-                return filePath;
+                return pdfBytes;
             }
             catch (Exception)
             {
-                // ── Failure: persist a FAILED record so the user can see it ──────
-                var failedReport = new ReportEntity
+                if (saveRecord)
                 {
-                    UserId     = userId,
-                    ReportType = reportType,
-                    Title      = $"{reportType} Report - {month}/{year}",
-                    FilePath   = null,           // no file was produced
-                    Parameters = JsonSerializer.Serialize(parameters),
-                    Status     = "FAILED"
-                };
-
-                await _reportRepository.SaveReportAsync(failedReport);
-                throw;   // rethrow so the controller returns 400 with the error message
+                    var failedReport = new ReportEntity
+                    {
+                        UserId     = userId,
+                        ReportType = reportType,
+                        Title      = $"{reportType} Report - {month}/{year}",
+                        FilePath   = null,
+                        Parameters = JsonSerializer.Serialize(parameters),
+                        Status     = "FAILED",
+                        GeneratedAt = DateTime.UtcNow
+                    };
+                    await _reportRepository.SaveReportAsync(failedReport);
+                }
+                throw;
             }
         }
 

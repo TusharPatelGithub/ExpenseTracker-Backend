@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SpendSmart.Expense.API.Data;
+using SpendSmart.Expense.API.DTOs;
 using SpendSmart.Expense.API.Entities;
 
 namespace SpendSmart.Expense.API.Repositories
@@ -54,6 +55,24 @@ namespace SpendSmart.Expense.API.Repositories
             var pattern = $"%{keyword}%";
             return await _context.Expenses
                 .Where(e => e.UserId == userId && EF.Functions.Like(e.Description, pattern))
+                .ToListAsync();
+        }
+
+        public async Task<decimal> SumAllPlatformAsync()
+            => await _context.Expenses.SumAsync(e => e.Amount);
+
+        public async Task<List<TopCategoryAdminDto>> GetTopPlatformCategoriesAsync(int topN = 5)
+        {
+            return await _context.Expenses
+                .GroupBy(e => e.CategoryId)
+                .Select(g => new TopCategoryAdminDto
+                {
+                    CategoryId    = g.Key,
+                    CategoryName  = $"Category {g.Key}",
+                    TotalAmount   = g.Sum(e => e.Amount)
+                })
+                .OrderByDescending(c => c.TotalAmount)
+                .Take(topN)
                 .ToListAsync();
         }
 

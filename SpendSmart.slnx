@@ -8,4 +8,13 @@
     <Project Path="src/SpendSmart.Notification.API/SpendSmart.Notification.API.csproj" />
     <Project Path="src/SpendSmart.Report.API/SpendSmart.Report.API.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SpendSmart.Auth.Tests/SpendSmart.Auth.Tests.csproj" />
+    <Project Path="tests/SpendSmart.Budget.Tests/SpendSmart.Budget.Tests.csproj" />
+    <Project Path="tests/SpendSmart.Category.Tests/SpendSmart.Category.Tests.csproj" />
+    <Project Path="tests/SpendSmart.Expense.Tests/SpendSmart.Expense.Tests.csproj" />
+    <Project Path="tests/SpendSmart.Income.Tests/SpendSmart.Income.Tests.csproj" />
+    <Project Path="tests/SpendSmart.Notification.Tests/SpendSmart.Notification.Tests.csproj" />
+    <Project Path="tests/SpendSmart.Report.Tests/SpendSmart.Report.Tests.csproj" />
+  </Folder>
 </Solution>

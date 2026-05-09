@@ -21,11 +21,11 @@ namespace SpendSmart.Expense.API.Controllers
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpPost]
-        public async Task<IActionResult> AddExpense([FromBody] AddExpenseDto dto)
+        public async Task<IActionResult> AddExpense([FromForm] AddExpenseDto dto, IFormFile? receiptFile)
         {
             try
             {
-                var response = await _expenseService.AddExpenseAsync(GetUserId(), dto, null);
+                var response = await _expenseService.AddExpenseAsync(GetUserId(), dto, receiptFile);
                 return CreatedAtAction(nameof(GetById), new { id = response.ExpenseId }, response);
             }
             catch (Exception ex)
@@ -127,6 +127,24 @@ namespace SpendSmart.Expense.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        // ─── Admin-Only ────────────────────────────────────────────────────────────
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/total")]
+        public async Task<IActionResult> GetPlatformTotal()
+        {
+            var total = await _expenseService.GetPlatformTotalAsync();
+            return Ok(new { Total = total });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/top-categories")]
+        public async Task<IActionResult> GetTopPlatformCategories([FromQuery] int topN = 5)
+        {
+            var categories = await _expenseService.GetTopPlatformCategoriesAsync(topN);
+            return Ok(categories);
         }
     }
 }

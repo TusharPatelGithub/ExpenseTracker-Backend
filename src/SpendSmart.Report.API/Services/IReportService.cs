@@ -12,7 +12,7 @@ namespace SpendSmart.Report.API.Services
         Task<List<Dictionary<string, object>>> GetTopExpenseCategoriesAsync(int userId, int topN);
         Task<List<Dictionary<string, object>>> GetDailySpendingAsync(int userId, int month, int year);
         Task<decimal> GetSavingsRateAsync(int userId, int month, int year);
-        Task<string> GeneratePdfReportAsync(int userId, string reportType, Dictionary<string, string> parameters);
+        Task<byte[]> GeneratePdfReportAsync(int userId, string reportType, Dictionary<string, string> parameters, bool saveRecord = true);
         Task<List<ReportEntity>> GetReportsByUserAsync(int userId);
         Task DeleteReportAsync(int reportId, int userId);
         Task<MonthlySummaryDto> GetYearlySummaryAsync(int userId, int year);

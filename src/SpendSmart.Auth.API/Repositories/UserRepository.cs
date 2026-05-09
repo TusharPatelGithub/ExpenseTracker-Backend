@@ -41,6 +41,11 @@ namespace SpendSmart.Auth.API.Repositories
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(s => s.SetProperty(u => u.Currency, currency));
 
+        public async Task SuspendUserAsync(int userId)
+            => await _context.Users
+                .Where(u => u.UserId == userId)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsActive, false));
+
         public async Task DeleteByIdAsync(int userId)
             => await _context.Users
                 .Where(u => u.UserId == userId)

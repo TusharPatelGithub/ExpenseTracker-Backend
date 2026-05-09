@@ -56,8 +56,9 @@ namespace SpendSmart.Report.API.Controllers
         {
             try
             {
-                var filePath = await _reportService.GeneratePdfReportAsync(GetUserId(), request.ReportType, request.Parameters);
-                return Ok(new { message = "Report generated successfully.", filePath });
+                var pdfBytes = await _reportService.GeneratePdfReportAsync(GetUserId(), request.ReportType, request.Parameters, true);
+                var fileName = $"report_{GetUserId()}_{request.ReportType}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
             {
@@ -69,11 +70,6 @@ namespace SpendSmart.Report.API.Controllers
         public async Task<IActionResult> GetMyReports()
             => Ok(await _reportService.GetReportsByUserAsync(GetUserId()));
 
-        /// <summary>
-        /// GET /api/reports/download/{id}
-        /// Streams the generated PDF file from local disk back to the client
-        /// as a file download (Content-Disposition: attachment).
-        /// </summary>
         [HttpGet("download/{id:int}")]
         public async Task<IActionResult> DownloadPdf(int id)
         {
@@ -85,17 +81,16 @@ namespace SpendSmart.Report.API.Controllers
                 if (report is null)
                     return NotFound(new { message = "Report not found." });
 
-                if (string.IsNullOrEmpty(report.FilePath) || report.Status == "FAILED")
-                    return BadRequest(new { message = "This report has no file available for download." });
+                if (report.Status == "FAILED")
+                    return BadRequest(new { message = "This report failed to generate." });
 
-                if (!System.IO.File.Exists(report.FilePath))
-                    return NotFound(new { message = "Report file no longer exists on disk." });
+                var parameters = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(report.Parameters) ?? new Dictionary<string, string>();
 
-                // Stream the PDF bytes directly — no buffering into memory
-                var stream   = new FileStream(report.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
-                var fileName = Path.GetFileName(report.FilePath);
+                // Generate fresh bytes without saving a new record
+                var pdfBytes = await _reportService.GeneratePdfReportAsync(GetUserId(), report.ReportType, parameters, false);
+                var fileName = $"report_{GetUserId()}_{report.ReportType}_{report.GeneratedAt:yyyyMMddHHmmss}.pdf";
 
-                return File(stream, "application/pdf", fileName);
+                return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
             {

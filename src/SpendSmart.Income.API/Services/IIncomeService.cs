@@ -15,5 +15,6 @@ namespace SpendSmart.Income.API.Services
         Task<decimal> GetTotalBySourceAsync(int userId, string source);
         Task<List<IncomeResponseDto>> GetRecurringIncomesAsync(int userId);
         Task<decimal> GetNetBalanceAsync(int userId);
+        Task<decimal> GetPlatformTotalAsync();
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SpendSmart.Auth.API.Clients;
 using SpendSmart.Auth.API.Data;
 using SpendSmart.Auth.API.Repositories;
 using SpendSmart.Auth.API.Services;
@@ -26,6 +27,22 @@ builder.Services.AddHttpClient("CategoryService", client =>
 {
     client.BaseAddress = new Uri(
         builder.Configuration["ServiceUrls:CategoryService"]!);
+});
+
+// Typed HTTP clients for cross-service admin analytics and notifications
+builder.Services.AddHttpClient<IExpenseServiceClient, ExpenseServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:ExpenseService"]!);
+});
+
+builder.Services.AddHttpClient<IIncomeServiceClient, IncomeServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:IncomeService"]!);
+});
+
+builder.Services.AddHttpClient<INotificationServiceClient, NotificationServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:NotificationService"]!);
 });
 
 // Singleton: token blacklist must outlive individual requests

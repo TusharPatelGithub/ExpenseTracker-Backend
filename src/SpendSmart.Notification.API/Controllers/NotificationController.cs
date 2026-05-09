@@ -65,6 +65,7 @@ namespace SpendSmart.Notification.API.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("send-bulk")]
+        [HttpPost("broadcast")]
         public async Task<IActionResult> SendBulk([FromBody] SendBulkDto dto)
         {
             await _notificationService.SendBulkAsync(dto.UserIds, dto.Title, dto.Message, dto.Type);

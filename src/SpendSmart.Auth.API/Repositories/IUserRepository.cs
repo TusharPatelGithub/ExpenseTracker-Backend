@@ -13,6 +13,8 @@ namespace SpendSmart.Auth.API.Repositories
         Task AddAsync(User user);
         Task UpdateLastLoginAsync(int userId, DateTime loginTime);
         Task UpdateCurrencyAsync(int userId, string currency);
+        /// <summary>Admin — sets IsActive = false via ExecuteUpdateAsync.</summary>
+        Task SuspendUserAsync(int userId);
         /// <summary>Permanently removes the user row from the database.</summary>
         Task DeleteByIdAsync(int userId);
         Task SaveChangesAsync();

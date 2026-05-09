@@ -1,5 +1,6 @@
 using MassTransit;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using SpendSmart.Expense.API.DTOs;
 using SpendSmart.Expense.API.Entities;
 using SpendSmart.Expense.API.IntegrationEvents;
@@ -12,15 +13,18 @@ namespace SpendSmart.Expense.API.Services
         private readonly IExpenseRepository _expenseRepository;
         private readonly IMediaService _mediaService;
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly ILogger<ExpenseService> _logger;
 
         public ExpenseService(
             IExpenseRepository expenseRepository,
             IMediaService mediaService,
-            IPublishEndpoint publishEndpoint)
+            IPublishEndpoint publishEndpoint,
+            ILogger<ExpenseService> logger)
         {
             _expenseRepository = expenseRepository;
             _mediaService = mediaService;
             _publishEndpoint = publishEndpoint;
+            _logger = logger;
         }
 
         public async Task<ExpenseResponseDto> AddExpenseAsync(int userId, AddExpenseDto dto, IFormFile? receipt)
@@ -124,6 +128,9 @@ namespace SpendSmart.Expense.API.Services
 
             // Requirements specified hard delete
             await _expenseRepository.DeleteByExpenseIdAsync(expenseId);
+
+            _logger.LogInformation("AUDIT LOG: User {UserId} deleted Expense {ExpenseId} of Amount {Amount} {Currency} on {Date}", 
+                userId, expenseId, expense.Amount, expense.Currency, DateTime.UtcNow);
         }
 
         public async Task<decimal> GetTotalByUserAsync(int userId)
@@ -143,6 +150,12 @@ namespace SpendSmart.Expense.API.Services
             var expenses = await _expenseRepository.SearchExpensesAsync(userId, keyword);
             return expenses.Select(MapToResponseDto).ToList();
         }
+
+        public async Task<decimal> GetPlatformTotalAsync()
+            => await _expenseRepository.SumAllPlatformAsync();
+
+        public async Task<List<TopCategoryAdminDto>> GetTopPlatformCategoriesAsync(int topN = 5)
+            => await _expenseRepository.GetTopPlatformCategoriesAsync(topN);
 
         private static ExpenseResponseDto MapToResponseDto(ExpenseEntity e) => new()
         {
