@@ -15,6 +15,10 @@ namespace SpendSmart.Auth.API.Repositories
         Task UpdateCurrencyAsync(int userId, string currency);
         /// <summary>Admin — sets IsActive = false via ExecuteUpdateAsync.</summary>
         Task SuspendUserAsync(int userId);
+        /// <summary>Admin — sets IsActive = true via ExecuteUpdateAsync.</summary>
+        Task ReactivateUserAsync(int userId);
+        /// <summary>Promote a regular user to Admin via ExecuteUpdateAsync.</summary>
+        Task PromoteToAdminAsync(int userId);
         /// <summary>Permanently removes the user row from the database.</summary>
         Task DeleteByIdAsync(int userId);
         Task SaveChangesAsync();

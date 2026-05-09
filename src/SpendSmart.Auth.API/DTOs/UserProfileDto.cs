@@ -10,5 +10,6 @@ namespace SpendSmart.Auth.API.DTOs
         public string Role { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
+        public bool IsActive { get; set; }
     }
 }

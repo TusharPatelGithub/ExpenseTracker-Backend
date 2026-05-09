@@ -78,8 +78,7 @@ namespace SpendSmart.Auth.API.Controllers
                 Role        = u.Role,
                 CreatedAt   = u.CreatedAt,
                 LastLoginAt = u.LastLoginAt,
-                // Include suspension status as an extra field via property reuse:
-                // We rely on IsActive — the front-end checks u.isActive, not u.isSuspended
+                IsActive    = u.IsActive
             }).ToList();
 
             return Ok(dtos);
@@ -117,6 +116,66 @@ namespace SpendSmart.Auth.API.Controllers
                 after        : after);
 
             return Ok(new { message = $"User {id} has been suspended." });
+        }
+
+        // ─── 2.2. Reactivate User Account ──────────────────────────────────────────
+
+        /// <summary>PUT /api/admin/users/{id}/reactivate — sets IsActive = true.</summary>
+        [HttpPut("users/{id:int}/reactivate")]
+        public async Task<IActionResult> ReactivateUser(int id)
+        {
+            var target = await _userRepo.FindByUserIdAsync(id);
+            if (target is null)
+                return NotFound(new { message = $"User {id} not found." });
+
+            if (target.IsActive)
+                return Conflict(new { message = "User is already active." });
+
+            var before = new { target.UserId, target.IsActive };
+
+            await _userRepo.ReactivateUserAsync(id);
+
+            var after = new { UserId = id, IsActive = true };
+
+            await _auditLog.LogAsync(
+                actorUserId  : ActorId,
+                actorEmail   : ActorEmail,
+                action       : "REACTIVATE_USER",
+                targetUserId : id,
+                before       : before,
+                after        : after);
+
+            return Ok(new { message = $"User {id} has been reactivated." });
+        }
+
+        // ─── 2.5. Promote User to Admin ───────────────────────────────────────────
+
+        /// <summary>PUT /api/admin/users/{id}/promote — sets Role = 'Admin'.</summary>
+        [HttpPut("users/{id:int}/promote")]
+        public async Task<IActionResult> PromoteUser(int id)
+        {
+            var target = await _userRepo.FindByUserIdAsync(id);
+            if (target is null)
+                return NotFound(new { message = $"User {id} not found." });
+
+            if (target.Role == "Admin")
+                return Conflict(new { message = "User is already an Admin." });
+
+            var before = new { target.UserId, target.Role };
+
+            await _userRepo.PromoteToAdminAsync(id);
+
+            var after = new { UserId = id, Role = "Admin" };
+
+            await _auditLog.LogAsync(
+                actorUserId  : ActorId,
+                actorEmail   : ActorEmail,
+                action       : "PROMOTE_USER",
+                targetUserId : id,
+                before       : before,
+                after        : after);
+
+            return Ok(new { message = $"User {id} has been promoted to Admin." });
         }
 
         // ─── 3. Delete User Account ───────────────────────────────────────────────

@@ -46,6 +46,16 @@ namespace SpendSmart.Auth.API.Repositories
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsActive, false));
 
+        public async Task ReactivateUserAsync(int userId)
+            => await _context.Users
+                .Where(u => u.UserId == userId)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsActive, true));
+
+        public async Task PromoteToAdminAsync(int userId)
+            => await _context.Users
+                .Where(u => u.UserId == userId)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Role, "Admin"));
+
         public async Task DeleteByIdAsync(int userId)
             => await _context.Users
                 .Where(u => u.UserId == userId)
