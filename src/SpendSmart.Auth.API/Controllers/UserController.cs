@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,15 +17,18 @@ namespace SpendSmart.Auth.API.Controllers
         private readonly IUserService _userService;
         private readonly ITokenBlacklistService _tokenBlacklist;
         private readonly IAuditLogService _auditLog;
+        private readonly IConfiguration _configuration;
 
         public UserController(
             IUserService userService,
             ITokenBlacklistService tokenBlacklist,
-            IAuditLogService auditLog)
+            IAuditLogService auditLog,
+            IConfiguration configuration)
         {
             _userService    = userService;
             _tokenBlacklist = tokenBlacklist;
             _auditLog       = auditLog;
+            _configuration  = configuration;
         }
 
         // ─── Registration & Login ─────────────────────────────────────────────────
@@ -102,20 +106,29 @@ namespace SpendSmart.Auth.API.Controllers
         {
             try
             {
-                var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 if (result?.Principal == null)
-                    return Unauthorized(new { message = "Google authentication failed." });
+                {
+                    var fe = _configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
+                    return Redirect($"{fe}/login?error=Google+authentication+failed");
+                }
 
                 var email     = result.Principal.FindFirstValue(ClaimTypes.Email)!;
                 var fullName  = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
-                var avatarUrl = result.Principal.FindFirstValue("picture") ?? string.Empty;
+                var avatarUrl = result.Principal.FindFirstValue("urn:google:picture") ??
+                                result.Principal.FindFirstValue("picture") ?? string.Empty;
 
                 var response = await _userService.HandleGoogleLoginAsync(email, fullName, avatarUrl);
-                return Ok(response);
+
+                // Redirect the browser back to React with the JWT token
+                var frontendUrl = _configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
+                var redirectUrl = $"{frontendUrl}/auth/google/callback?token={Uri.EscapeDataString(response.Token)}";
+                return Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                var frontendUrl = _configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
+                return Redirect($"{frontendUrl}/login?error={Uri.EscapeDataString(ex.Message)}");
             }
         }
 
