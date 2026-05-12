@@ -171,6 +171,22 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Initialize database BEFORE any middleware runs
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    try
+    {
+        db.Database.EnsureCreated();
+        Console.WriteLine("Database initialized successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database initialization failed: {ex.Message}");
+        throw;
+    }
+}
+
 // ─── Middleware Pipeline ───────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
@@ -193,3 +209,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
