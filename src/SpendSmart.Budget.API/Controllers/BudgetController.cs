@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SpendSmart.Budget.API.DTOs;
 using SpendSmart.Budget.API.Services;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 namespace SpendSmart.Budget.API.Controllers
 {
@@ -86,5 +87,20 @@ namespace SpendSmart.Budget.API.Controllers
             catch (UnauthorizedAccessException) { return Forbid(); }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         }
+
+        // ── Internal service-to-service endpoint (no JWT required) ────────────
+        [AllowAnonymous]
+        [HttpPost("internal/expense-created")]
+        public async Task<IActionResult> OnExpenseCreated([FromBody] InternalExpenseCreatedDto dto)
+        {
+            await _budgetService.CheckBudgetOnExpenseAsync(dto.UserId, dto.CategoryId, dto.Amount);
+            return Ok();
+        }
     }
+
+    public record InternalExpenseCreatedDto(
+        [property: JsonPropertyName("userId")] int UserId,
+        [property: JsonPropertyName("categoryId")] int CategoryId,
+        [property: JsonPropertyName("amount")] decimal Amount
+    );
 }

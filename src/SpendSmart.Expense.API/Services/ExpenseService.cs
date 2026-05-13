@@ -13,17 +13,20 @@ namespace SpendSmart.Expense.API.Services
         private readonly IExpenseRepository _expenseRepository;
         private readonly IMediaService _mediaService;
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<ExpenseService> _logger;
 
         public ExpenseService(
             IExpenseRepository expenseRepository,
             IMediaService mediaService,
             IPublishEndpoint publishEndpoint,
+            IHttpClientFactory httpClientFactory,
             ILogger<ExpenseService> logger)
         {
             _expenseRepository = expenseRepository;
             _mediaService = mediaService;
             _publishEndpoint = publishEndpoint;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
 
@@ -52,13 +55,23 @@ namespace SpendSmart.Expense.API.Services
             await _expenseRepository.AddAsync(expense);
             await _expenseRepository.SaveChangesAsync();
 
-            // Publish Integration Event to notify Budget Service
-            await _publishEndpoint.Publish(new ExpenseCreatedEvent
+            // Notify Budget service directly via HTTP (MassTransit InMemory can't cross process boundaries)
+            _ = Task.Run(async () =>
             {
-                UserId = expense.UserId,
-                CategoryId = expense.CategoryId,
-                Amount = expense.Amount,
-                Timestamp = expense.Date
+                try
+                {
+                    var budgetClient = _httpClientFactory.CreateClient("BudgetService");
+                    await budgetClient.PostAsJsonAsync("/api/budgets/internal/expense-created", new
+                    {
+                        userId = expense.UserId,
+                        categoryId = expense.CategoryId,
+                        amount = expense.Amount
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Budget update notification failed: {Message}", ex.Message);
+                }
             });
 
             return MapToResponseDto(expense);

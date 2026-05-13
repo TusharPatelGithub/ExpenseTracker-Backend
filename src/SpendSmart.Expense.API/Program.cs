@@ -19,10 +19,17 @@ builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IMediaService, LocalMediaService>();
 
 // ── MassTransit (InMemory — no RabbitMQ needed on Render) ─────────────────────
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(x =>{    x.UsingInMemory();});
+
+// ── HTTP Clients (Budget service for direct spend updates) ───────────────────
+builder.Services.AddHttpClient("BudgetService", client =>
 {
-    x.UsingInMemory();
+    var url = builder.Configuration["ServiceUrls:BudgetService"] 
+              ?? "https://expensetracker-budget.onrender.com";
+    client.BaseAddress = new Uri(url);
+    client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpContextAccessor();
 
 
 // ── JWT Authentication ───────────────────────────────────────────────────────
