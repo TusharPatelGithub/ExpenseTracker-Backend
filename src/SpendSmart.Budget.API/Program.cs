@@ -25,7 +25,7 @@ builder.Services.AddHttpClient("NotificationService", client =>
     var url = builder.Configuration["ServiceUrls:NotificationService"]
               ?? "https://expensetracker-notification.onrender.com";
     client.BaseAddress = new Uri(url);
-    client.Timeout = TimeSpan.FromSeconds(10);
+    client.Timeout = TimeSpan.FromSeconds(90); // Render free tier needs ~50s cold start
 });
 
 // MassTransit (InMemory — no RabbitMQ needed on Render)

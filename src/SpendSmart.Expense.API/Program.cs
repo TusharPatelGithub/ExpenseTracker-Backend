@@ -27,7 +27,7 @@ builder.Services.AddHttpClient("BudgetService", client =>
     var url = builder.Configuration["ServiceUrls:BudgetService"] 
               ?? "https://expensetracker-budget.onrender.com";
     client.BaseAddress = new Uri(url);
-    client.Timeout = TimeSpan.FromSeconds(10);
+    client.Timeout = TimeSpan.FromSeconds(90); // Render free tier needs ~50s cold start
 });
 builder.Services.AddHttpContextAccessor();
 
