@@ -106,9 +106,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<IncomeDbContext>();
     try 
     { 
-        db.Database.EnsureCreated(); 
-        var creator = Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacadeExtensions.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>(db.Database);
-        if (creator != null) creator.CreateTables();
+        db.Database.EnsureCreated();
     } 
     catch { /* Ignore if tables already exist */ }
 }

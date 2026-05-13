@@ -178,9 +178,6 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.EnsureCreated();
-        var creator = Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacadeExtensions
-            .GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>(db.Database);
-        if (creator != null) creator.CreateTables();
         Console.WriteLine("Database initialized successfully.");
     }
     catch (Exception ex)
