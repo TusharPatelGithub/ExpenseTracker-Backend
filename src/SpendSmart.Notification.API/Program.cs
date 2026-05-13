@@ -95,7 +95,7 @@ using (var scope = app.Services.CreateScope())
                 ""Message"" CHARACTER VARYING(1000) NOT NULL,
                 ""RelatedId"" INTEGER,
                 ""IsRead"" BOOLEAN NOT NULL DEFAULT FALSE,
-                ""SentAt"" TIMESTAMP WITH TIME ZONE NOT NULL
+                ""SentAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
             )");
         Console.WriteLine("Notifications table OK.");
     }

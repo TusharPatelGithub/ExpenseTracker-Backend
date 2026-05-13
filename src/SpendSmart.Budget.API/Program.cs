@@ -22,8 +22,10 @@ builder.Services.AddHostedService<BudgetResetService>();
 // HTTP client for cross-service budget alert calls to the Notification microservice
 builder.Services.AddHttpClient("NotificationService", client =>
 {
-    client.BaseAddress = new Uri(
-        builder.Configuration["ServiceUrls:NotificationService"]!);
+    var url = builder.Configuration["ServiceUrls:NotificationService"]
+              ?? "https://expensetracker-notification.onrender.com";
+    client.BaseAddress = new Uri(url);
+    client.Timeout = TimeSpan.FromSeconds(10);
 });
 
 // MassTransit (InMemory — no RabbitMQ needed on Render)
