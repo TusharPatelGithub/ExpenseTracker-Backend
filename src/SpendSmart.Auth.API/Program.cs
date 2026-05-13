@@ -178,12 +178,15 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.EnsureCreated();
+        var creator = Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacadeExtensions
+            .GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>(db.Database);
+        if (creator != null) creator.CreateTables();
         Console.WriteLine("Database initialized successfully.");
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Database initialization failed: {ex.Message}");
-        throw;
+        // Don't throw - tables may already exist
     }
 }
 
@@ -201,12 +204,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Auto-create database tables
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    db.Database.EnsureCreated();
-}
-
 app.Run();
-

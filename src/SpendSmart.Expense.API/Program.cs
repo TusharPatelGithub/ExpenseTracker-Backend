@@ -18,19 +18,12 @@ builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IMediaService, LocalMediaService>();
 
-// ── MassTransit (InMemory for dev — swap to RabbitMQ when ready) ─────────────
+// ── MassTransit (InMemory — no RabbitMQ needed on Render) ─────────────────────
 builder.Services.AddMassTransit(x =>
 {
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", builder.Configuration["RabbitMQ:VirtualHost"] ?? "/", h =>
-        {
-            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
-        });
-        cfg.ConfigureEndpoints(context);
-    });
+    x.UsingInMemory();
 });
+
 
 // ── JWT Authentication ───────────────────────────────────────────────────────
 var jwt = builder.Configuration.GetSection("JwtSettings");
@@ -101,7 +94,13 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ExpenseDbContext>();
-    db.Database.EnsureCreated();
+    try 
+    { 
+        db.Database.EnsureCreated(); 
+        var creator = Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacadeExtensions.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>(db.Database);
+        if (creator != null) creator.CreateTables();
+    } 
+    catch { /* Ignore if tables already exist */ }
 }
 
 app.Run();

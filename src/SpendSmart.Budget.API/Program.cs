@@ -26,16 +26,12 @@ builder.Services.AddHttpClient("NotificationService", client =>
         builder.Configuration["ServiceUrls:NotificationService"]!);
 });
 
+// MassTransit (InMemory — no RabbitMQ needed on Render)
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<BudgetCheckConsumer>();
-    x.UsingRabbitMq((context, cfg) =>
+    x.UsingInMemory((context, cfg) =>
     {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
-        {
-            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
-        });
         cfg.ConfigureEndpoints(context);
     });
 });
@@ -105,7 +101,13 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BudgetDbContext>();
-    db.Database.EnsureCreated();
+    try 
+    { 
+        db.Database.EnsureCreated(); 
+        var creator = Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacadeExtensions.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>(db.Database);
+        if (creator != null) creator.CreateTables();
+    } 
+    catch { /* Ignore if tables already exist */ }
 }
 
 app.Run();
