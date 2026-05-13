@@ -100,21 +100,33 @@ app.MapControllers();
 
 
 
-// Auto-create database tables if they don't exist
+// Create tables with raw SQL — works even when EnsureCreated skips due to shared DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IncomeDbContext>();
-    // EnsureCreated skips table creation if any tables already exist in the DB.
-    // On Render the shared Postgres DB already has Auth tables, so we must
-    // explicitly call CreateTables() to create ONLY the tables for this context.
-    try { db.Database.EnsureCreated(); } catch { }
     try
     {
-        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
-            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-        creator.CreateTables();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Incomes"" (
+                ""IncomeId"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""Source"" CHARACTER VARYING(50) NOT NULL,
+                ""Amount"" NUMERIC(18,2) NOT NULL,
+                ""Currency"" CHARACTER VARYING(10),
+                ""Description"" CHARACTER VARYING(500),
+                ""Date"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""IsRecurring"" BOOLEAN NOT NULL DEFAULT FALSE,
+                ""RecurrenceType"" CHARACTER VARYING(20),
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""UpdatedAt"" TIMESTAMP WITH TIME ZONE
+            )");
+        Console.WriteLine("Incomes table OK.");
     }
-    catch { /* Tables already exist — ignore */ }
+    catch (Exception ex) { Console.WriteLine($"Incomes table: {ex.Message}"); }
+    
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Incomes_UserId"" ON ""Incomes"" (""UserId"")"); } catch { }
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Incomes_Source"" ON ""Incomes"" (""Source"")"); } catch { }
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Incomes_Date"" ON ""Incomes"" (""Date"")"); } catch { }
 }
 
 app.Run();

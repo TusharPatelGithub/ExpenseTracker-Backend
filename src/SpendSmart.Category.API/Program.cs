@@ -76,17 +76,29 @@ app.MapControllers();
 
 
 // Auto-create database tables if they don't exist
+// Create tables with raw SQL — works even when EnsureCreated skips due to shared DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CategoryDbContext>();
-    try { db.Database.EnsureCreated(); } catch { }
     try
     {
-        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
-            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-        creator.CreateTables();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Categories"" (
+                ""CategoryId"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER,
+                ""Name"" CHARACTER VARYING(100) NOT NULL,
+                ""Icon"" CHARACTER VARYING(10),
+                ""Color"" CHARACTER VARYING(20),
+                ""Type"" CHARACTER VARYING(20) NOT NULL,
+                ""IsDefault"" BOOLEAN NOT NULL DEFAULT FALSE,
+                ""IsActive"" BOOLEAN NOT NULL DEFAULT TRUE,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL
+            )");
+        Console.WriteLine("Categories table OK.");
     }
-    catch { /* Tables already exist — ignore */ }
+    catch (Exception ex) { Console.WriteLine($"Categories table: {ex.Message}"); }
+    
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Categories_UserId"" ON ""Categories"" (""UserId"")"); } catch { }
 }
 
 app.Run();

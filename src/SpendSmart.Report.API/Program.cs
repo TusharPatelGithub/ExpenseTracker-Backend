@@ -89,17 +89,28 @@ app.MapControllers();
 
 
 // Auto-create database tables if they don't exist
+// Create tables with raw SQL — works even when EnsureCreated skips due to shared DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ReportDbContext>();
-    try { db.Database.EnsureCreated(); } catch { }
     try
     {
-        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
-            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-        creator.CreateTables();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Reports"" (
+                ""ReportId"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""ReportType"" CHARACTER VARYING(50) NOT NULL,
+                ""Title"" CHARACTER VARYING(200) NOT NULL,
+                ""GeneratedAt"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""FilePath"" TEXT,
+                ""Parameters"" TEXT NOT NULL DEFAULT '{}',
+                ""Status"" CHARACTER VARYING(20) NOT NULL
+            )");
+        Console.WriteLine("Reports table OK.");
     }
-    catch { /* Tables already exist — ignore */ }
+    catch (Exception ex) { Console.WriteLine($"Reports table: {ex.Message}"); }
+    
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Reports_UserId"" ON ""Reports"" (""UserId"")"); } catch { }
 }
 
 app.Run();

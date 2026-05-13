@@ -98,17 +98,32 @@ app.MapControllers();
 
 
 // Auto-create database tables if they don't exist
+// Create tables with raw SQL — works even when EnsureCreated skips due to shared DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BudgetDbContext>();
-    try { db.Database.EnsureCreated(); } catch { }
     try
     {
-        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
-            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-        creator.CreateTables();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Budgets"" (
+                ""BudgetId"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""CategoryId"" INTEGER,
+                ""Name"" CHARACTER VARYING(100) NOT NULL,
+                ""LimitAmount"" NUMERIC(18,2) NOT NULL,
+                ""SpentAmount"" NUMERIC(18,2) NOT NULL DEFAULT 0,
+                ""Currency"" CHARACTER VARYING(10),
+                ""Period"" CHARACTER VARYING(20),
+                ""StartDate"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""EndDate"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""IsActive"" BOOLEAN NOT NULL DEFAULT TRUE,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL
+            )");
+        Console.WriteLine("Budgets table OK.");
     }
-    catch { /* Tables already exist — ignore */ }
+    catch (Exception ex) { Console.WriteLine($"Budgets table: {ex.Message}"); }
+    
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Budgets_UserId"" ON ""Budgets"" (""UserId"")"); } catch { }
 }
 
 app.Run();

@@ -91,17 +91,35 @@ app.MapControllers();
 
 
 // Auto-create database tables if they don't exist
+// Create tables with raw SQL — works even when EnsureCreated skips due to shared DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ExpenseDbContext>();
-    try { db.Database.EnsureCreated(); } catch { }
     try
     {
-        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
-            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-        creator.CreateTables();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Expenses"" (
+                ""ExpenseId"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""CategoryId"" INTEGER NOT NULL,
+                ""Amount"" NUMERIC(18,2) NOT NULL,
+                ""Currency"" CHARACTER VARYING(10),
+                ""Description"" CHARACTER VARYING(500),
+                ""Date"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""PaymentMode"" CHARACTER VARYING(20),
+                ""ReceiptUrl"" TEXT,
+                ""Tags"" CHARACTER VARYING(500),
+                ""IsRecurring"" BOOLEAN NOT NULL DEFAULT FALSE,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL,
+                ""UpdatedAt"" TIMESTAMP WITH TIME ZONE
+            )");
+        Console.WriteLine("Expenses table OK.");
     }
-    catch { /* Tables already exist — ignore */ }
+    catch (Exception ex) { Console.WriteLine($"Expenses table: {ex.Message}"); }
+    
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Expenses_UserId"" ON ""Expenses"" (""UserId"")"); } catch { }
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Expenses_CategoryId"" ON ""Expenses"" (""CategoryId"")"); } catch { }
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Expenses_Date"" ON ""Expenses"" (""Date"")"); } catch { }
 }
 
 app.Run();

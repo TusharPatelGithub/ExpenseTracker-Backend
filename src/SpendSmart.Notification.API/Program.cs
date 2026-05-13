@@ -80,17 +80,29 @@ app.MapControllers();
 
 
 // Auto-create database tables if they don't exist
+// Create tables with raw SQL — works even when EnsureCreated skips due to shared DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
-    try { db.Database.EnsureCreated(); } catch { }
     try
     {
-        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
-            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-        creator.CreateTables();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS ""Notifications"" (
+                ""NotificationId"" SERIAL PRIMARY KEY,
+                ""UserId"" INTEGER NOT NULL,
+                ""Type"" CHARACTER VARYING(50) NOT NULL,
+                ""Title"" CHARACTER VARYING(200) NOT NULL,
+                ""Message"" CHARACTER VARYING(1000) NOT NULL,
+                ""RelatedId"" INTEGER,
+                ""IsRead"" BOOLEAN NOT NULL DEFAULT FALSE,
+                ""SentAt"" TIMESTAMP WITH TIME ZONE NOT NULL
+            )");
+        Console.WriteLine("Notifications table OK.");
     }
-    catch { /* Tables already exist — ignore */ }
+    catch (Exception ex) { Console.WriteLine($"Notifications table: {ex.Message}"); }
+    
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Notifications_UserId"" ON ""Notifications"" (""UserId"")"); } catch { }
+    try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Notifications_IsRead"" ON ""Notifications"" (""IsRead"")"); } catch { }
 }
 
 app.Run();
