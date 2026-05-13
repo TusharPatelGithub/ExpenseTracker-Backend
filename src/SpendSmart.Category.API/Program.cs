@@ -99,6 +99,33 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex) { Console.WriteLine($"Categories table: {ex.Message}"); }
     
     try { await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Categories_UserId"" ON ""Categories"" (""UserId"")"); } catch { }
+
+    // Seed default categories if none exist yet
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync(@"
+            INSERT INTO ""Categories"" (""UserId"", ""Name"", ""Icon"", ""Color"", ""Type"", ""IsDefault"", ""IsActive"", ""CreatedAt"")
+            SELECT NULL, v.name, v.icon, v.color, v.type, TRUE, TRUE, NOW()
+            FROM (VALUES
+                ('Food & Dining',   '🍔', '#FF6B6B', 'EXPENSE'),
+                ('Transport',       '🚗', '#4ECDC4', 'EXPENSE'),
+                ('Shopping',        '🛍️', '#45B7D1', 'EXPENSE'),
+                ('Healthcare',      '💊', '#96CEB4', 'EXPENSE'),
+                ('Entertainment',   '🎬', '#FFEAA7', 'EXPENSE'),
+                ('Utilities',       '💡', '#DDA0DD', 'EXPENSE'),
+                ('Education',       '📚', '#AED6F1', 'EXPENSE'),
+                ('Housing',         '🏠', '#F8C471', 'EXPENSE'),
+                ('Salary',          '💰', '#98D8C8', 'INCOME'),
+                ('Freelance',       '💻', '#F7DC6F', 'INCOME'),
+                ('Investment',      '📈', '#82E0AA', 'INCOME'),
+                ('Rental',          '🏘️', '#F1948A', 'INCOME')
+            ) AS v(name, icon, color, type)
+            WHERE NOT EXISTS (
+                SELECT 1 FROM ""Categories"" WHERE ""IsDefault"" = TRUE AND ""Name"" = v.name
+            )");
+        Console.WriteLine("Default categories seeded OK.");
+    }
+    catch (Exception ex) { Console.WriteLine($"Category seeding: {ex.Message}"); }
 }
 
 app.Run();
