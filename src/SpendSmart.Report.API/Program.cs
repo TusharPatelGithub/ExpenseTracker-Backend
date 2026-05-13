@@ -92,11 +92,14 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ReportDbContext>();
-    try 
-    { 
-        db.Database.EnsureCreated();
-    } 
-    catch { /* Ignore if tables already exist */ }
+    try { db.Database.EnsureCreated(); } catch { }
+    try
+    {
+        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
+            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+        creator.CreateTables();
+    }
+    catch { /* Tables already exist — ignore */ }
 }
 
 app.Run();

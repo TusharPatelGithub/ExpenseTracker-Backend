@@ -104,11 +104,17 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IncomeDbContext>();
-    try 
-    { 
-        db.Database.EnsureCreated();
-    } 
-    catch { /* Ignore if tables already exist */ }
+    // EnsureCreated skips table creation if any tables already exist in the DB.
+    // On Render the shared Postgres DB already has Auth tables, so we must
+    // explicitly call CreateTables() to create ONLY the tables for this context.
+    try { db.Database.EnsureCreated(); } catch { }
+    try
+    {
+        var creator = ((Microsoft.EntityFrameworkCore.Infrastructure.IInfrastructure<IServiceProvider>)db)
+            .Instance.GetRequiredService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+        creator.CreateTables();
+    }
+    catch { /* Tables already exist — ignore */ }
 }
 
 app.Run();
