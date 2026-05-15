@@ -318,18 +318,5 @@ namespace SpendSmart.Auth.API.Controllers
                 .ToListAsync();
             return Ok(logs);
         }
-
-        [HttpGet("make-me-admin-temp")]
-        public async Task<IActionResult> MakeMeAdminTemp([FromServices] SpendSmart.Auth.API.Data.AuthDbContext db)
-        {
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Email.ToLower().Contains("tushar@1234.com"));
-            if (user != null)
-            {
-                user.Role = "Admin";
-                await db.SaveChangesAsync();
-                return Ok("User Tushar@1234.com is now an Admin.");
-            }
-            return NotFound("User not found.");
-        }
     }
 }
