@@ -1,0 +1,387 @@
+{
+  "info": {
+    "name": "SpendSmart Microservices API",
+    "description": "Postman Collection for SpendSmart Backend Testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "auth_url", "value": "http://localhost:5260", "type": "string"},
+    {"key": "category_url", "value": "http://localhost:5026", "type": "string"},
+    {"key": "expense_url", "value": "http://localhost:5227", "type": "string"},
+    {"key": "income_url", "value": "http://localhost:5257", "type": "string"},
+    {"key": "budget_url", "value": "http://localhost:5138", "type": "string"},
+    {"key": "notification_url", "value": "http://localhost:5267", "type": "string"},
+    {"key": "report_url", "value": "http://localhost:5191", "type": "string"},
+    {"key": "token", "value": "", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "1. Auth API",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {
+              "raw": "{{auth_url}}/api/users/register",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "users", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"Password123!\",\n    \"currency\": \"INR\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {
+              "raw": "{{auth_url}}/api/users/login",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "users", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{auth_url}}/api/users/profile",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Admin - Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{auth_url}}/api/admin/users",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "Admin - Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{auth_url}}/api/admin/analytics",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "admin", "analytics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Category API",
+      "item": [
+        {
+          "name": "Seed Default Categories",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{category_url}}/api/categories/seed",
+              "host": ["{{category_url}}"],
+              "path": ["api", "categories", "seed"]
+            }
+          }
+        },
+        {
+          "name": "Get User Categories",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{category_url}}/api/categories/user",
+              "host": ["{{category_url}}"],
+              "path": ["api", "categories", "user"]
+            }
+          }
+        },
+        {
+          "name": "Create Custom Category",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{category_url}}/api/categories",
+              "host": ["{{category_url}}"],
+              "path": ["api", "categories"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Gym & Fitness\",\n    \"icon\": \"dumbbell\",\n    \"color\": \"#33FF57\",\n    \"type\": \"EXPENSE\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Expense API",
+      "item": [
+        {
+          "name": "Add Expense",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{expense_url}}/api/expenses",
+              "host": ["{{expense_url}}"],
+              "path": ["api", "expenses"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"categoryId\": 1,\n    \"amount\": 500,\n    \"currency\": \"INR\",\n    \"description\": \"Weekly groceries\",\n    \"date\": \"2026-05-13T10:00:00Z\",\n    \"paymentMode\": \"CARD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get User Expenses",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{expense_url}}/api/expenses/user",
+              "host": ["{{expense_url}}"],
+              "path": ["api", "expenses", "user"]
+            }
+          }
+        },
+        {
+          "name": "Get Total Expense",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{expense_url}}/api/expenses/total",
+              "host": ["{{expense_url}}"],
+              "path": ["api", "expenses", "total"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Income API",
+      "item": [
+        {
+          "name": "Add Income",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{income_url}}/api/incomes",
+              "host": ["{{income_url}}"],
+              "path": ["api", "incomes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"SALARY\",\n    \"amount\": 50000,\n    \"currency\": \"INR\",\n    \"description\": \"Monthly Salary\",\n    \"date\": \"2026-05-01T10:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get User Incomes",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{income_url}}/api/incomes/user",
+              "host": ["{{income_url}}"],
+              "path": ["api", "incomes", "user"]
+            }
+          }
+        },
+        {
+          "name": "Get Total Income",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{income_url}}/api/incomes/total",
+              "host": ["{{income_url}}"],
+              "path": ["api", "incomes", "total"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Budget API",
+      "item": [
+        {
+          "name": "Create Budget",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{budget_url}}/api/budgets",
+              "host": ["{{budget_url}}"],
+              "path": ["api", "budgets"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Monthly Food Budget\",\n    \"limitAmount\": 10000,\n    \"currency\": \"INR\",\n    \"period\": \"MONTHLY\",\n    \"startDate\": \"2026-05-01T00:00:00Z\",\n    \"endDate\": \"2026-05-31T23:59:59Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get User Budgets",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{budget_url}}/api/budgets/user",
+              "host": ["{{budget_url}}"],
+              "path": ["api", "budgets", "user"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget Utilization",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{budget_url}}/api/budgets/utilization",
+              "host": ["{{budget_url}}"],
+              "path": ["api", "budgets", "utilization"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notification API",
+      "item": [
+        {
+          "name": "Get Unread Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/unread",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "unread"]
+            }
+          }
+        },
+        {
+          "name": "Get User Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/user",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "user"]
+            }
+          }
+        },
+        {
+          "name": "Mark All As Read",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/mark-all-read",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "mark-all-read"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Report API",
+      "item": [
+        {
+          "name": "Get Monthly Summary",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{report_url}}/api/reports/monthly?month=5&year=2026",
+              "host": ["{{report_url}}"],
+              "path": ["api", "reports", "monthly"],
+              "query": [
+                {"key": "month", "value": "5"},
+                {"key": "year", "value": "2026"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{report_url}}/api/reports/category-breakdown?start=2026-05-01T00:00:00Z&end=2026-05-31T23:59:59Z",
+              "host": ["{{report_url}}"],
+              "path": ["api", "reports", "category-breakdown"],
+              "query": [
+                {"key": "start", "value": "2026-05-01T00:00:00Z"},
+                {"key": "end", "value": "2026-05-31T23:59:59Z"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate PDF Report",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": {
+              "raw": "{{report_url}}/api/reports/generate-pdf",
+              "host": ["{{report_url}}"],
+              "path": ["api", "reports", "generate-pdf"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reportType\": \"MONTHLY\",\n    \"parameters\": {\n        \"month\": \"5\",\n        \"year\": \"2026\"\n    }\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
