@@ -33,7 +33,7 @@ namespace SpendSmart.Budget.API.Repositories
 
         public async Task<List<BudgetEntity>> FindOverBudgetAsync(int userId)
             => await _context.Budgets
-                .Where(b => b.UserId == userId && b.SpentAmount > b.LimitAmount)
+                .Where(b => b.UserId == userId && b.SpentAmount >= b.LimitAmount)
                 .ToListAsync();
 
         public async Task UpdateSpentAmountAsync(int budgetId, decimal amount)

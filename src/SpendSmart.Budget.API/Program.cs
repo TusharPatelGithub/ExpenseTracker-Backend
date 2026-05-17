@@ -22,8 +22,11 @@ builder.Services.AddHostedService<BudgetResetService>();
 // HTTP client for cross-service budget alert calls to the Notification microservice
 builder.Services.AddHttpClient("NotificationService", client =>
 {
-    var url = builder.Configuration["ServiceUrls:NotificationService"]
-              ?? "https://expensetracker-notification.onrender.com";
+    var url = builder.Configuration["ServiceUrls:NotificationService"];
+    if (string.IsNullOrEmpty(url) || (url.Contains("localhost") && !builder.Environment.IsDevelopment()))
+    {
+        url = "https://expensetracker-notification.onrender.com";
+    }
     client.BaseAddress = new Uri(url);
     client.Timeout = TimeSpan.FromSeconds(90); // Render free tier needs ~50s cold start
 });
