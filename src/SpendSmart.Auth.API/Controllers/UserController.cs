@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -79,58 +78,7 @@ namespace SpendSmart.Auth.API.Controllers
             return Ok(new { message = "Logged out successfully." });
         }
 
-        // ─── Google OAuth ─────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// GET api/auth/google-login
-        /// Redirects the browser to Google's consent screen.
-        /// The frontend should navigate the user to this URL.
-        /// </summary>
-        [HttpGet("google-login")]
-        public IActionResult GoogleLogin()
-        {
-            var properties = new AuthenticationProperties
-            {
-                RedirectUri = Url.Action(nameof(GoogleCallback))
-            };
-            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-        }
-
-        /// <summary>
-        /// GET api/auth/google-callback
-        /// Google redirects here after the user consents.
-        /// Finds or creates the user account, then returns a JWT.
-        /// </summary>
-        [HttpGet("google-callback")]
-        public async Task<IActionResult> GoogleCallback()
-        {
-            try
-            {
-                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                if (result?.Principal == null)
-                {
-                    var fe = _configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
-                    return Redirect($"{fe}/login?error=Google+authentication+failed");
-                }
-
-                var email     = result.Principal.FindFirstValue(ClaimTypes.Email)!;
-                var fullName  = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
-                var avatarUrl = result.Principal.FindFirstValue("urn:google:picture") ??
-                                result.Principal.FindFirstValue("picture") ?? string.Empty;
-
-                var response = await _userService.HandleGoogleLoginAsync(email, fullName, avatarUrl);
-
-                // Redirect the browser back to React with the JWT token
-                var frontendUrl = _configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
-                var redirectUrl = $"{frontendUrl}/auth/google/callback?token={Uri.EscapeDataString(response.Token)}";
-                return Redirect(redirectUrl);
-            }
-            catch (Exception ex)
-            {
-                var frontendUrl = _configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
-                return Redirect($"{frontendUrl}/login?error={Uri.EscapeDataString(ex.Message)}");
-            }
-        }
 
         // ─── Profile ──────────────────────────────────────────────────────────────
 

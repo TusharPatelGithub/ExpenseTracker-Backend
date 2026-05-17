@@ -96,53 +96,7 @@ namespace SpendSmart.Auth.API.Services
             return Task.CompletedTask;
         }
 
-        // ─── Google OAuth ────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Called from the Google OAuth callback. Finds an existing user by email,
-        /// or creates a new one (no password hash — Google-only account).
-        /// Default currency is INR; user can update it after first login.
-        /// </summary>
-        public async Task<AuthResponseDto> HandleGoogleLoginAsync(
-            string email, string fullName, string avatarUrl)
-        {
-            var user = await _userRepository.FindByEmailAsync(email);
-            bool isNew = user is null;
-
-            if (isNew)
-            {
-                user = new User
-                {
-                    FullName      = fullName,
-                    Email         = email,
-                    AvatarUrl     = avatarUrl,
-                    PasswordHash  = string.Empty, // Google-authenticated, no local password
-                    Currency      = "INR"
-                };
-
-                await _userRepository.AddAsync(user);
-                await _userRepository.SaveChangesAsync();
-
-                // Seed default categories for brand-new Google users
-                await _categoryService.SeedDefaultCategoriesAsync(user.UserId);
-            }
-            else
-            {
-                if (!user!.IsActive)
-                    throw new Exception("Account is suspended. Please contact support.");
-
-                await _userRepository.UpdateLastLoginAsync(user.UserId, DateTime.UtcNow);
-            }
-
-            return new AuthResponseDto
-            {
-                Token    = GenerateJwtToken(user!),
-                FullName = user!.FullName,
-                Email    = user.Email,
-                Currency = user.Currency,
-                Role     = user.Role
-            };
-        }
 
         // ─── Profile ─────────────────────────────────────────────────────────────
 

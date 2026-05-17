@@ -20,7 +20,6 @@ namespace SpendSmart.Auth.API.Services
         Task DeleteAccountAsync(int targetUserId);
         /// <summary>Admin — returns all users including suspended ones.</summary>
         Task<List<User>> GetAllUsersAsync();
-        /// <summary>Handle Google OAuth callback: find or create user, return JWT.</summary>
-        Task<AuthResponseDto> HandleGoogleLoginAsync(string email, string fullName, string avatarUrl);
+
     }
 }

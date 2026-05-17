@@ -1,7 +1,5 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -89,47 +87,14 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };
-})
-// Google OAuth — redirect-based flow
-// Credentials are stored in appsettings.json under "GoogleOAuth"
-.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, cookieOptions =>
-{
-    // Keep the OAuth state cookie alive long enough for the round-trip
-    cookieOptions.Cookie.SameSite  = SameSiteMode.Lax;
-    cookieOptions.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    cookieOptions.Cookie.IsEssential  = true;
-})
-.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
-{
-    var google = builder.Configuration.GetSection("GoogleOAuth");
-    options.ClientId     = google["ClientId"]!;
-    options.ClientSecret = google["ClientSecret"]!;
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.SaveTokens   = true;
-
-    // Request the user's profile picture
-    options.Scope.Add("profile");
-
-    // Fix: Correlation cookie must survive the Google redirect (cross-site top-level navigation)
-    options.CorrelationCookie.SameSite    = SameSiteMode.Lax;
-    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.CorrelationCookie.IsEssential  = true;
-    options.CorrelationCookie.HttpOnly     = true;
 });
 
 // ─── Authorization ────────────────────────────────────────────────────────────
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
-// Allow essential cookies (like the OAuth correlation cookie) regardless of consent policy
-builder.Services.Configure<CookiePolicyOptions>(o =>
-{
-    o.MinimumSameSitePolicy = SameSiteMode.Lax;
-    o.CheckConsentNeeded    = _ => false;  // don't require consent banner
-});
-
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-var frontendUrl = builder.Configuration["GoogleOAuth:FrontendUrl"] ?? "http://localhost:5173";
+var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:5173";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -195,7 +160,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCookiePolicy();          // must be before UseAuthentication
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
