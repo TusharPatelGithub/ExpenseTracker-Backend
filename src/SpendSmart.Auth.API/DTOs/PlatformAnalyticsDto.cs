@@ -14,6 +14,7 @@ namespace SpendSmart.Auth.API.DTOs
 
     public class TopCategoryDto
     {
+        public int CategoryId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
     }

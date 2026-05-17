@@ -39,7 +39,7 @@ namespace SpendSmart.Income.API.Repositories
             => await _context.Incomes.Where(e => e.UserId == userId && e.IsRecurring).ToListAsync();
 
         public async Task<decimal> SumAllPlatformAsync()
-            => await _context.Incomes.SumAsync(e => e.Amount);
+            => await _context.Incomes.SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
         public async Task AddAsync(IncomeEntity income)
             => await _context.Incomes.AddAsync(income);

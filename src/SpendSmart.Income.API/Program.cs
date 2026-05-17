@@ -52,7 +52,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwt["Issuer"],
             ValidAudience = jwt["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwt["SecretKey"]!))
+                Encoding.UTF8.GetBytes(jwt["SecretKey"]!)),
+            RoleClaimType = "role"
         };
     });
 

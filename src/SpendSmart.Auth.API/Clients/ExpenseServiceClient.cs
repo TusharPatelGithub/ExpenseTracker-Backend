@@ -27,10 +27,11 @@ namespace SpendSmart.Auth.API.Clients
         {
             try
             {
-                _http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
-
-                var result = await _http.GetFromJsonAsync<TotalWrapper>("/api/expenses/admin/total");
+                var request = new HttpRequestMessage(HttpMethod.Get, "/api/expenses/admin/total");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+                var response = await _http.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return 0m;
+                var result = await response.Content.ReadFromJsonAsync<TotalWrapper>();
                 return result?.Total ?? 0m;
             }
             catch (Exception ex)
@@ -44,11 +45,11 @@ namespace SpendSmart.Auth.API.Clients
         {
             try
             {
-                _http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
-
-                var result = await _http.GetFromJsonAsync<List<TopCategoryDto>>(
-                    $"/api/expenses/admin/top-categories?topN={topN}");
+                var request = new HttpRequestMessage(HttpMethod.Get, $"/api/expenses/admin/top-categories?topN={topN}");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+                var response = await _http.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return new();
+                var result = await response.Content.ReadFromJsonAsync<List<TopCategoryDto>>();
                 return result ?? new();
             }
             catch (Exception ex)

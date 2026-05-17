@@ -59,7 +59,7 @@ namespace SpendSmart.Expense.API.Repositories
         }
 
         public async Task<decimal> SumAllPlatformAsync()
-            => await _context.Expenses.SumAsync(e => e.Amount);
+            => await _context.Expenses.SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
         public async Task<List<TopCategoryAdminDto>> GetTopPlatformCategoriesAsync(int topN = 5)
         {

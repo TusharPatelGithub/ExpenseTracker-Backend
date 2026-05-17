@@ -23,10 +23,11 @@ namespace SpendSmart.Auth.API.Clients
         {
             try
             {
-                _http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
-
-                var result = await _http.GetFromJsonAsync<TotalWrapper>("/api/incomes/admin/total");
+                var request = new HttpRequestMessage(HttpMethod.Get, "/api/incomes/admin/total");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+                var response = await _http.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return 0m;
+                var result = await response.Content.ReadFromJsonAsync<TotalWrapper>();
                 return result?.Total ?? 0m;
             }
             catch (Exception ex)
